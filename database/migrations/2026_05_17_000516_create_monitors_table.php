@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::create('monitors', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('url')->unique();
             $table->unsignedTinyInteger('check_interval')->default(5);
             $table->unsignedTinyInteger('threshold')->default(3);

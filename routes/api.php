@@ -1,14 +1,10 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Api\V1\MonitorController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
-
-
 Route::prefix('v1')->group(function (): void {
-      Route::get('/', fn () => 'API is active');
+    Route::get('/', fn (): string => 'API is active');
+
+    Route::apiResource('monitors', MonitorController::class)->only(['store']);
 });
