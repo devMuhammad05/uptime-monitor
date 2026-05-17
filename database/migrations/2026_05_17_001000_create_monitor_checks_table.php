@@ -16,6 +16,8 @@ return new class extends Migration
             $table->boolean('is_up')->default(false);
             $table->timestamp('checked_at');
             $table->timestamps();
+
+            $table->index(['monitor_id', 'checked_at']);
         });
     }
 

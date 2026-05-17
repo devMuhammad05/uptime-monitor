@@ -262,7 +262,6 @@ Returns a paginated list of all registered monitors.
       "check_interval": 5,
       "threshold": 3,
       "status": "pending",
-      "consecutive_failures": 0,
       "uptime_percentage": null,
       "last_checked_at": null,
       "created_at": "2026-05-17T10:00:00.000000Z"
@@ -316,7 +315,6 @@ Content-Type: application/json
     "check_interval": 10,
     "threshold": 2,
     "status": "pending",
-    "consecutive_failures": 0,
     "uptime_percentage": null,
     "last_checked_at": null,
     "created_at": "2026-05-17T10:00:00.000000Z"
