@@ -6,7 +6,6 @@ use App\Enums\MonitorStatus;
 use Database\Factories\MonitorFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Monitor extends Model
@@ -24,7 +23,6 @@ class Monitor extends Model
 
     /** @var array<int, string> */
     protected $fillable = [
-        'user_id',
         'url',
         'check_interval',
         'threshold',
@@ -40,11 +38,6 @@ class Monitor extends Model
         'last_checked_at' => 'datetime',
         'uptime_percentage' => 'decimal:2',
     ];
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
 
     public function checks(): HasMany
     {

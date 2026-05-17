@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'monitor' => [
+        'alert_email' => env('MONITOR_ALERT_EMAIL'),
+    ],
+
 ];
