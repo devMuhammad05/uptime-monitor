@@ -12,8 +12,10 @@ Artisan::command('inspire', function () {
 
 Schedule::call(function () {
     Monitor::query()
-        ->whereNull('last_checked_at')
-        ->orWhereRaw('last_checked_at <= datetime("now", "-" || check_interval || " minutes")')
         ->cursor()
+        ->filter(fn (Monitor $monitor) =>
+            $monitor->last_checked_at === null ||
+            $monitor->last_checked_at->addMinutes($monitor->check_interval)->lte(now())
+        )
         ->each(fn (Monitor $monitor) => CheckMonitorJob::dispatch($monitor->id));
 })->everyMinute();

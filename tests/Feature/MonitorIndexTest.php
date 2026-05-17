@@ -3,9 +3,9 @@
 use App\Enums\MonitorStatus;
 use App\Models\Monitor;
 
-describe('GET /api/v1/monitors', function (): void {
+describe('GET /api/monitors', function (): void {
     it('returns 200 with an empty list when no monitors exist', function (): void {
-        $this->getJson('/api/v1/monitors')
+        $this->getJson('/api/monitors')
             ->assertStatus(200)
             ->assertJsonPath('status', 'success')
             ->assertJsonPath('data', []);
@@ -14,7 +14,7 @@ describe('GET /api/v1/monitors', function (): void {
     it('returns all monitors with correct fields', function (): void {
         Monitor::factory()->count(3)->create();
 
-        $response = $this->getJson('/api/v1/monitors');
+        $response = $this->getJson('/api/monitors');
 
         $response->assertStatus(200)
             ->assertJsonPath('status', 'success')
@@ -40,7 +40,7 @@ describe('GET /api/v1/monitors', function (): void {
         Monitor::factory()->create(['status' => MonitorStatus::Down]);
         Monitor::factory()->create(['status' => MonitorStatus::Pending]);
 
-        $response = $this->getJson('/api/v1/monitors');
+        $response = $this->getJson('/api/monitors');
 
         $statuses = collect($response->json('data'))->pluck('status')->sort()->values()->all();
 

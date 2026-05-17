@@ -12,9 +12,10 @@ use Illuminate\Http\Request;
 
 class MonitorController extends ApiController
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $monitors = Monitor::all();
+        $perPage = min(max(1, (int) $request->query('per_page', 15)), 100);
+        $monitors = Monitor::paginate($perPage);
 
         return $this->successResponse(MonitorResource::collection($monitors));
     }

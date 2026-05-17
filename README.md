@@ -20,7 +20,7 @@ A Laravel 13 REST API for tracking the availability of URLs. You register a URL,
 
 - PHP 8.4 or higher
 - Composer
-- SQLite
+- A relational database supported by Laravel (SQLite, MySQL, PostgreSQL)
 
 ---
 
@@ -131,13 +131,13 @@ The middleware is registered globally on the `api` group in `bootstrap/app.php`,
 
 ### Rate limiting
 
-Read endpoints (`GET /monitors`, `GET /monitors/{id}/history`) are limited to **60 requests per minute**. The create endpoint (`POST /monitors`) is limited to **10 requests per minute** to reduce abuse. Clients that exceed the limit receive a `429 Too Many Requests` response.
+Read endpoints (`GET /api/monitors`, `GET /api/monitors/{id}/history`) are limited to **60 requests per minute**. The create endpoint (`POST /api/monitors`) is limited to **10 requests per minute** to reduce abuse. Clients that exceed the limit receive a `429 Too Many Requests` response.
 
 ---
 
 ## API Reference
 
-All endpoints are prefixed with `/api/v1`. Every response is JSON with this shape:
+All endpoints are prefixed with `/api`. Every response is JSON with this shape:
 
 ```json
 {
@@ -154,7 +154,7 @@ Errors follow the same shape with `"status": "error"` and an appropriate HTTP st
 ### Health check
 
 ```
-GET /api/v1
+GET /api
 ```
 
 Returns a plain string confirming the API is reachable.
@@ -164,17 +164,24 @@ Returns a plain string confirming the API is reachable.
 ### List monitors
 
 ```
-GET /api/v1/monitors
+GET /api/monitors
 ```
 
-Returns all registered monitors.
+Returns a paginated list of registered monitors.
+
+**Query parameters**
+
+| Parameter | Default | Notes |
+|---|---|---|
+| `page` | 1 | Page number. |
+| `per_page` | 15 | Results per page. Maximum 100. |
 
 **Response 200**
 
 ```json
 {
   "status": "success",
-  "message": "Monitors retrieved successfully",
+  "message": "Operation successful",
   "data": [
     {
       "id": 1,
@@ -187,7 +194,13 @@ Returns all registered monitors.
       "last_checked_at": null,
       "created_at": "2026-05-17T10:00:00.000000Z"
     }
-  ]
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 1,
+    "last_page": 1
+  }
 }
 ```
 
@@ -196,7 +209,7 @@ Returns all registered monitors.
 ### Create a monitor
 
 ```
-POST /api/v1/monitors
+POST /api/monitors
 Content-Type: application/json
 ```
 
@@ -255,7 +268,7 @@ Content-Type: application/json
 ### Get monitor history
 
 ```
-GET /api/v1/monitors/{id}/history
+GET /api/monitors/{id}/history
 ```
 
 Returns paginated check results for a given monitor, ordered from most recent to oldest.

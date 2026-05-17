@@ -3,9 +3,9 @@
 use App\Enums\MonitorStatus;
 use App\Models\Monitor;
 
-describe('POST /api/v1/monitors', function (): void {
+describe('POST /api/monitors', function (): void {
     it('creates a monitor and returns 201', function (): void {
-        $response = $this->postJson('/api/v1/monitors', [
+        $response = $this->postJson('/api/monitors', [
             'url' => 'https://example.com',
             'check_interval' => 10,
             'threshold' => 2,
@@ -27,7 +27,7 @@ describe('POST /api/v1/monitors', function (): void {
     });
 
     it('applies default values when optional fields are omitted', function (): void {
-        $this->postJson('/api/v1/monitors', [
+        $this->postJson('/api/monitors', [
             'url' => 'https://example.com',
         ])->assertStatus(201);
 
@@ -39,13 +39,13 @@ describe('POST /api/v1/monitors', function (): void {
     });
 
     it('requires a url', function (): void {
-        $this->postJson('/api/v1/monitors', [])
+        $this->postJson('/api/monitors', [])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['url']);
     });
 
     it('rejects a non-http url', function (): void {
-        $this->postJson('/api/v1/monitors', [
+        $this->postJson('/api/monitors', [
             'url' => 'ftp://example.com',
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['url']);
@@ -54,14 +54,14 @@ describe('POST /api/v1/monitors', function (): void {
     it('rejects a duplicate url', function (): void {
         Monitor::factory()->create(['url' => 'https://example.com']);
 
-        $this->postJson('/api/v1/monitors', [
+        $this->postJson('/api/monitors', [
             'url' => 'https://example.com',
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['url']);
     });
 
     it('rejects check_interval below 1', function (): void {
-        $this->postJson('/api/v1/monitors', [
+        $this->postJson('/api/monitors', [
             'url' => 'https://example.com',
             'check_interval' => 0,
         ])->assertStatus(422)
@@ -69,7 +69,7 @@ describe('POST /api/v1/monitors', function (): void {
     });
 
     it('rejects check_interval above 60', function (): void {
-        $this->postJson('/api/v1/monitors', [
+        $this->postJson('/api/monitors', [
             'url' => 'https://example.com',
             'check_interval' => 61,
         ])->assertStatus(422)
@@ -77,7 +77,7 @@ describe('POST /api/v1/monitors', function (): void {
     });
 
     it('rejects threshold below 1', function (): void {
-        $this->postJson('/api/v1/monitors', [
+        $this->postJson('/api/monitors', [
             'url' => 'https://example.com',
             'threshold' => 0,
         ])->assertStatus(422)

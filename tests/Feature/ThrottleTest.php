@@ -8,33 +8,33 @@ beforeEach(function (): void {
 });
 
 describe('Rate limiting', function (): void {
-    it('throttles POST /api/v1/monitors after 10 requests', function (): void {
+    it('throttles POST /api/monitors after 10 requests', function (): void {
         foreach (range(1, 10) as $i) {
-            $this->postJson('/api/v1/monitors', [
+            $this->postJson('/api/monitors', [
                 'url' => "https://example{$i}.com",
             ])->assertStatus(201);
         }
 
-        $this->postJson('/api/v1/monitors', [
+        $this->postJson('/api/monitors', [
             'url' => 'https://example-extra.com',
         ])->assertStatus(429);
     });
 
-    it('throttles GET /api/v1/monitors after 60 requests', function (): void {
+    it('throttles GET /api/monitors after 60 requests', function (): void {
         foreach (range(1, 60) as $i) {
-            $this->getJson('/api/v1/monitors')->assertStatus(200);
+            $this->getJson('/api/monitors')->assertStatus(200);
         }
 
-        $this->getJson('/api/v1/monitors')->assertStatus(429);
+        $this->getJson('/api/monitors')->assertStatus(429);
     });
 
-    it('throttles GET /api/v1/monitors/{id}/history after 60 requests', function (): void {
+    it('throttles GET /api/monitors/{id}/history after 60 requests', function (): void {
         $monitor = Monitor::factory()->create();
 
         foreach (range(1, 60) as $i) {
-            $this->getJson("/api/v1/monitors/{$monitor->id}/history")->assertStatus(200);
+            $this->getJson("/api/monitors/{$monitor->id}/history")->assertStatus(200);
         }
 
-        $this->getJson("/api/v1/monitors/{$monitor->id}/history")->assertStatus(429);
+        $this->getJson("/api/monitors/{$monitor->id}/history")->assertStatus(429);
     });
 });
