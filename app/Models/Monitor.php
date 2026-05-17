@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Monitor extends Model
 {
+    /** @var array<int, string> */
     protected $fillable = [
         'user_id',
         'url',
@@ -19,6 +20,7 @@ class Monitor extends Model
         'uptime_percentage',
     ];
 
+    /** @var array<string, string> */
     protected $casts = [
         'status' => MonitorStatus::class,
         'last_checked_at' => 'datetime',
