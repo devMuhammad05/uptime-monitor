@@ -1,6 +1,18 @@
 # Uptime Monitor API
 
-A Laravel 13 REST API for tracking the availability of URLs. You register a URL, the system records check results against it, and you can query the history to see how it has been performing over time.
+A Laravel 13 REST API for tracking the availability of URLs. You register a URL, the system polls it on a schedule, records each check result, and sends email alerts when a site goes down or recovers.
+
+---
+
+## How it works
+
+1. The Laravel scheduler runs every minute and dispatches a `CheckMonitorJob` for every monitor whose `last_checked_at` is past its `check_interval`.
+2. The job makes an HTTP GET request to the monitor's URL (10-second timeout, redirects not followed).
+3. The result is recorded as a `MonitorCheck` row with the HTTP status code, response time, and whether the site was up (`2xx`/`3xx` = up, `4xx`/`5xx` or a connection failure = down).
+4. Consecutive failures are counted. When they reach the monitor's `threshold`, the monitor is marked **down**.
+5. A successful check resets the counter and marks the monitor **up**.
+6. When a monitor transitions **to down** or **back up**, an email alert is sent to the address configured in `MONITOR_ALERT_EMAIL`.
+7. `uptime_percentage` is recalculated after every check as `(up checks / total checks) * 100`.
 
 ---
 
@@ -8,8 +20,7 @@ A Laravel 13 REST API for tracking the availability of URLs. You register a URL,
 
 - PHP 8.4 or higher
 - Composer
-- Node.js and npm (for asset compilation)
-- SQLite (default) or any database Laravel supports
+- SQLite
 
 ---
 
@@ -19,7 +30,6 @@ Clone the repository and install dependencies:
 
 ```bash
 composer install
-npm install
 ```
 
 Copy the environment file and generate an application key:
@@ -35,41 +45,66 @@ Run migrations:
 php artisan migrate
 ```
 
-Build frontend assets:
+### Alert email
 
-```bash
-npm run build
+Open `.env` and set the address that should receive up/down alerts:
+
+```env
+MONITOR_ALERT_EMAIL=you@example.com
 ```
 
-Start the development server:
+If this value is empty or not set, notifications are silently skipped.
 
-```bash
-php artisan serve
-```
+Configure your mail driver as normal via the `MAIL_*` variables. For local development the default `log` driver writes mail to `storage/logs/laravel.log` so you can verify alerts are being triggered without needing an SMTP server.
 
-If you want the queue worker running alongside (for background jobs):
+### Queue worker
+
+Jobs are dispatched to the queue. Start a worker so they are processed:
 
 ```bash
 php artisan queue:listen
 ```
 
-There is also a Composer shortcut that runs the server, queue listener, and Vite dev server together:
+For production, manage this with a process supervisor such as Supervisor or systemd so it restarts automatically.
+
+### Scheduler
+
+The scheduler must run continuously for monitors to be polled. During development:
+
+```bash
+php artisan schedule:work
+```
+
+This runs the scheduler every minute in the foreground. For production, add a single cron entry to the server:
+
+```cron
+* * * * * cd /path/to/project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### Development shortcut
+
+The following Composer command starts the HTTP server, queue worker, and Vite dev server together:
 
 ```bash
 composer dev
 ```
 
+The scheduler still needs to be started separately with `php artisan schedule:work`.
+
 ---
 
 ## Running Tests
 
-The test suite uses Pest and runs against an in-memory SQLite database, so no extra database setup is needed.
+The test suite uses Pest and runs against an in-memory SQLite database — no separate database or queue setup needed.
 
 ```bash
 composer test
 ```
 
-This runs a code style check followed by the full test suite. All three API endpoints are covered end to end, including validation rules, edge cases, pagination, and error responses. The tests also cover factory states like timed-out checks and checks with null response times.
+This runs a code style check followed by the full test suite. Coverage includes:
+
+- All three API endpoints (create, list, history) with validation rules, defaults, pagination, and error responses.
+- `CheckMonitorJob` — HTTP check recording (200, 301, 500, connection failures), threshold and consecutive-failure logic, uptime percentage calculation, `last_checked_at` updates, and all notification transitions (pending→down, up→down, down→up, stays up, stays down, failures below threshold, no alert email configured).
 
 ---
 
@@ -143,8 +178,8 @@ Content-Type: application/json
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `url` | string | yes | Must be a valid HTTP or HTTPS URL. Must be unique. |
-| `check_interval` | integer | no | Minutes between checks. Between 1 and 60. Defaults to 5. |
-| `threshold` | integer | no | Consecutive failures before marking the monitor as down. Minimum 1. Defaults to 3. |
+| `check_interval` | integer | no | Minutes between checks. Between 1 and 60. Defaults to `5`. |
+| `threshold` | integer | no | Consecutive failures before marking the monitor as down. Minimum 1. Defaults to `3`. |
 
 **Example**
 
@@ -202,7 +237,7 @@ Returns paginated check results for a given monitor, ordered from most recent to
 
 | Parameter | Default | Notes |
 |---|---|---|
-| `page` | 1 | Page number |
+| `page` | 1 | Page number. |
 | `per_page` | 15 | Results per page. Maximum 100. |
 
 **Response 200**
@@ -230,7 +265,7 @@ Returns paginated check results for a given monitor, ordered from most recent to
 }
 ```
 
-A `status_code` of `0` and a `null` `response_time_ms` indicate the check timed out.
+A `status_code` of `0` and a `null` `response_time_ms` indicate a connection failure or timeout.
 
 **Response 404** — when the monitor does not exist
 
@@ -246,29 +281,21 @@ A `status_code` of `0` and a `null` `response_time_ms` indicate the check timed 
 
 ## Monitor status values
 
-A monitor can be in one of three states:
-
-- `pending` — created but not yet checked
-- `up` — the URL is responding successfully
-- `down` — the URL has failed more consecutive times than the configured threshold
-
----
-
-## Design Principles
-
-**Type hinting**
-
-Every method across the codebase carries full PHP 8.4 type hints — parameter types, return types, and property types.
-
-
-**Testing**
-
-The project is fully tested end to end using Pest. Every API endpoint is covered, including validation failures, edge cases like timed-out checks with a `status_code` of `0` and a `null` response time, pagination boundaries, and 404 behaviour for non-existent monitors. Tests run against an in-memory SQLite database, so they are fast and self-contained with no external dependencies.
+| Status | Meaning |
+|---|---|
+| `pending` | Created but not yet checked. |
+| `up` | The URL is responding successfully. |
+| `down` | The URL has failed consecutively at least as many times as `threshold`. |
 
 ---
 
-## Notes
+## Environment variables
 
-- The API endpoints are currently public and do not require authentication. 
-- The queue driver is set to `database` by default, which is where background checking jobs would run once implemented.
-
+| Variable | Required | Description |
+|---|---|---|
+| `APP_KEY` | yes | Laravel application key. Generated by `php artisan key:generate`. |
+| `DB_CONNECTION` | no | Database driver. Uses `sqlite`. |
+| `MONITOR_ALERT_EMAIL` | no | Email address to receive up/down alerts. Notifications are skipped when empty. |
+| `MAIL_MAILER` | no | Mail driver (`smtp`, `log`, `ses`, etc.). Defaults to `log`. |
+| `MAIL_FROM_ADDRESS` | no | Sender address for alert emails. |
+| `QUEUE_CONNECTION` | no | Queue driver. Defaults to `database`. |
