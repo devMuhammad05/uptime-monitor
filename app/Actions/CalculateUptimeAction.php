@@ -8,14 +8,14 @@ class CalculateUptimeAction
 {
     public function execute(Monitor $monitor): float
     {
-        $total = $monitor->checks()->count();
+        $result = $monitor->checks()
+            ->selectRaw('COUNT(*) as total, SUM(CASE WHEN is_up THEN 1 ELSE 0 END) as up_count')
+            ->first();
 
-        if ($total === 0) {
+        if (! $result || $result->total === 0) {
             return 0.0;
         }
 
-        $upCount = $monitor->checks()->where('is_up', true)->count();
-
-        return round($upCount / $total * 100, 2);
+        return round($result->up_count / $result->total * 100, 2);
     }
 }
