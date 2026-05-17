@@ -13,8 +13,7 @@ Artisan::command('inspire', function () {
 Schedule::call(function () {
     Monitor::query()
         ->cursor()
-        ->filter(fn (Monitor $monitor) =>
-            $monitor->last_checked_at === null ||
+        ->filter(fn (Monitor $monitor) => $monitor->last_checked_at === null ||
             $monitor->last_checked_at->addMinutes($monitor->check_interval)->lte(now())
         )
         ->each(fn (Monitor $monitor) => CheckMonitorJob::dispatch($monitor->id));

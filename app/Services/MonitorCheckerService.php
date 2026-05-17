@@ -15,6 +15,10 @@ use Throwable;
 
 class MonitorCheckerService
 {
+    private const TIMEOUT = 10;
+
+    private const CONNECT_TIMEOUT = 5;
+
     public function __construct(private readonly CalculateUptimeAction $uptimeAction) {}
 
     public function run(Monitor $monitor): void
@@ -47,8 +51,8 @@ class MonitorCheckerService
         try {
             $start = hrtime(true);
 
-            $response = Http::timeout(10)
-                ->connectTimeout(5)
+            $response = Http::timeout(self::TIMEOUT)
+                ->connectTimeout(self::CONNECT_TIMEOUT)
                 ->withoutRedirecting()
                 ->get($url);
 
