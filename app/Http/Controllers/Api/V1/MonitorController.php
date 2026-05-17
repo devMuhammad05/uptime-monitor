@@ -10,6 +10,13 @@ use Illuminate\Http\JsonResponse;
 
 class MonitorController extends ApiController
 {
+    public function index(): JsonResponse
+    {
+        $monitors = Monitor::all();
+
+        return $this->successResponse(MonitorResource::collection($monitors));
+    }
+
     public function store(StoreMonitorRequest $request): JsonResponse
     {
         $monitor = Monitor::create($request->validated());
