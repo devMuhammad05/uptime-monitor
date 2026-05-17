@@ -79,14 +79,11 @@ class MonitorCheckerService
             return;
         }
 
-        $newFailures = $monitor->consecutive_failures + 1;
-        $update = ['consecutive_failures' => $newFailures];
+        $monitor->increment('consecutive_failures');
 
-        if ($newFailures >= $monitor->threshold) {
-            $update['status'] = MonitorStatus::Down;
+        if ($monitor->consecutive_failures >= $monitor->threshold) {
+            $monitor->update(['status' => MonitorStatus::Down]);
         }
-
-        $monitor->update($update);
     }
 
     private function sendNotificationIfStatusChanged(Monitor $monitor, MonitorStatus $previousStatus): void

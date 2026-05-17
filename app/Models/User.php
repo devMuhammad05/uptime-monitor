@@ -31,10 +31,6 @@ class User extends Authenticatable
     /**
      * Get the user's initials
      */
-    public function monitors(): HasMany
-    {
-        return $this->hasMany(Monitor::class);
-    }
 
     public function initials(): string
     {
